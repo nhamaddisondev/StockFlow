@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\StockMovement;
 use Illuminate\Http\Request;
+use App\Models\Product;
+
 
 class StockController extends Controller
 {
@@ -12,10 +15,10 @@ class StockController extends Controller
     public function index()
     {
         //
-        $stocks = Stock::all();
-        return view('welcome', [
-            'stocks' => $stocks
-        ]);
+        $stocks = StockMovement::with(['product', 'user'])
+            ->latest()
+            ->paginate(10);
+        return view('stocks.index', compact('stocks'));
     }
 
     /**
@@ -24,6 +27,8 @@ class StockController extends Controller
     public function create()
     {
         //
+        $products = Product::orderBy('name')->get();
+        return view('stocks.create', compact('products'));
 
     }
 
@@ -33,50 +38,58 @@ class StockController extends Controller
     public function store(Request $request)
     {
         //
+        $data = $request->validate([
+            'product_id' => ['required', 'exists:products,id'],
+            'quantity' => ['required', 'integer'],
+            'movement_type' => ['required', 'in:addition,removal'],
+            'note' => ['nullable' , 'string', 'max:1000']
+        ]);
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(StockMovement $stock)
     {
         //
-        $stock = Stock::find($id);
-        return view('stocks.show', [
-            'stock' => $stock
-        ]);
+        $stock -> load(['product', 'user']);
+        return view('stocks.show', compact('stock'));
     }
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(string $id)
+    public function edit(StockMovement $stock)
     {
         //
-        $stock = Stock::find($id);
-        return view('stocks.edit', [
-            'stock' => $stock
-        ]);
+        $products = Product::orderBy('name')->get();
+        return view('stocks.edit', compact('stock', 'products'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, StockMovement $stock)
     {
         //
-        $stock = Stock::find($id);
-        $stock->update($request->all());
-        return redirect('/stocks');
+        $data = $request->validate([
+            'product_id' => ['required', 'exists:products,id'],
+            'quantity' => ['required', 'integer'],
+            'movement_type' => ['required', 'in:addition,removal'],
+            'note' => ['nullable', 'string', 'max:1000']
+        ]);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(StockMovement $stock)
     {
         //
-        $stock = Stock::find($id);
+        $stock = StockMovement::findOrFail($stock->id);
         $stock->delete();
-        return redirect('/stocks');
+
+        return redirect()
+            ->route('stocks.index')
+            ->with('success', 'Stock movement deleted successfully.');
     }
 }

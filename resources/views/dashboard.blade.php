@@ -19,7 +19,9 @@
 
                     <p class="mb-3 mt-9 px-3 text-xs font-bold uppercase tracking-wider text-slate-400">Administration</p>
                     <nav class="space-y-1 text-sm font-medium">
-                        <a href="{{ url('/users') }}" class="flex items-center gap-3 rounded-xl px-3 py-3 text-slate-600 hover:bg-slate-100">♙ Users</a>
+                        @if (auth()->user()?->isAdmin())
+                            <a href="{{ url('/users') }}" class="flex items-center gap-3 rounded-xl px-3 py-3 text-slate-600 hover:bg-slate-100">♙ Users</a>
+                        @endif
                     </nav>
 
                     <div class="mt-auto rounded-2xl bg-blue-50 p-4">
