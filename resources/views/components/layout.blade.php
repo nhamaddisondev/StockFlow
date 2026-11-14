@@ -1,5 +1,7 @@
 @props([
     'title' => 'Default Title',
+    'fullWidth' => false,
+    'showNavbar' => true,
 ])
 
 <!DOCTYPE html>
@@ -11,8 +13,13 @@
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 </head>
 <body class="min-h-screen bg-blue-50 text-zinc-900 antialiased">
-    <x-navbar />
-    <main class="mx-auto max-w-5xl px-6 py-10">
+    @if ($showNavbar)
+        <x-navbar />
+    @endif
+        <main @class([
+            'mx-auto max-w-5xl px-6 py-10' => ! $fullWidth,
+            'w-full max-w-none p-0' => $fullWidth,
+        ])>
         {{ $slot }}
     </main>
 </body>

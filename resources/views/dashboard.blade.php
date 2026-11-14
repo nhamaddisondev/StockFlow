@@ -1,8 +1,8 @@
-<x-layout>
-    <div class="min-h-screen bg-slate-50">
-        <div class="mx-auto flex max-w-[1600px]">
+<x-layout :full-width="true" :show-navbar="false" title="StockFlow Dashboard">
+    <div class="min-h-screen w-full bg-slate-50">
+        <div class="flex min-h-screen w-full">
             {{-- Sidebar --}}
-            <aside class="hidden min-h-screen w-64 shrink-0 border-r border-slate-200 bg-white lg:block">
+            <aside class="hidden w-64 shrink-0 border-r border-slate-200 bg-white lg:block xl:w-72">
                 <div class="sticky top-0 flex h-screen flex-col px-5 py-6">
                     <a href="{{ url('/dashboard') }}" class="flex items-center gap-3 px-2">
                         <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white text-xl font-bold">S</span>
@@ -38,15 +38,15 @@
 
             {{-- Main content --}}
             <main class="min-w-0 flex-1">
-                <header class="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200 bg-white/95 px-5 py-4 backdrop-blur sm:px-8">
+                <header class="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-slate-200 bg-white/95 px-4 py-4 backdrop-blur sm:px-6 lg:px-8">
                     <div>
                         <p class="text-xs text-slate-500">Workspace / Overview</p>
                         <h1 class="mt-1 text-xl font-bold text-slate-900 sm:text-2xl">Dashboard</h1>
                     </div>
-                    <a href="{{ url('/products/create') }}" class="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">+ Add Product</a>
+                    <a href="{{ url('/products/create') }}" class="shrink-0 rounded-lg bg-blue-600 px-3 py-2.5 text-xs font-semibold text-white hover:bg-blue-700 sm:px-4 sm:text-sm">+ Add Product</a>
                 </header>
 
-                <div class="space-y-7 p-5 sm:p-8">
+                <div class="space-y-6 p-4 sm:space-y-7 sm:p-6 lg:p-8">
                     <section class="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
                         <div>
                             <h2 class="text-2xl font-bold tracking-tight text-slate-900">Good day, {{ auth()->user()->name ?? 'there' }} 👋</h2>
@@ -70,7 +70,7 @@
                         ];
                     @endphp
 
-                    <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    <section class="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2 2xl:grid-cols-4">
                         @foreach ($summaryCards as $card)
                             <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                                 <div class="flex items-center justify-between">
@@ -84,7 +84,7 @@
                     </section>
 
                     {{-- Quick actions --}}
-                    <section class="grid gap-4 sm:grid-cols-3">
+                    <section class="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
                         <a href="{{ url('/products/create') }}" class="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 hover:border-blue-300 hover:shadow-md">
                             <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-2xl font-bold text-blue-600">+</span>
                             <span><span class="block text-sm font-bold text-slate-900">Add a product</span><span class="mt-1 block text-xs text-slate-500">Create a new product</span></span>
@@ -100,8 +100,8 @@
                     </section>
 
                     {{-- Recent movements and low-stock list --}}
-                    <section class="grid gap-6 xl:grid-cols-3">
-                        <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white xl:col-span-2">
+                    <section class="grid min-w-0 gap-6 2xl:grid-cols-3">
+                        <div class="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white 2xl:col-span-2">
                             <div class="flex items-center justify-between border-b border-slate-100 px-5 py-4">
                                 <div><h3 class="font-bold text-slate-900">Recent stock movements</h3><p class="mt-1 text-xs text-slate-500">Latest inventory activity</p></div>
                                 <a href="{{ url('/stock-movements') }}" class="text-sm font-semibold text-blue-600">View all</a>
