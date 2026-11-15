@@ -2,111 +2,81 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\Product;
 use App\Models\Category;
+use App\Models\Product;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class ProductController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
-        $products = Product::with('category')
-            ->orderBy('created_at')
-            ->paginate(10);
+        $products = Product::with('category')->orderBy('name')->paginate(10);
+
         return view('products.index', compact('products'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        //
         $categories = Category::orderBy('name')->get();
-        return view('products.create', compact('categories'));
 
-        
+        return view('products.create', compact('categories'));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        //
         $data = $request->validate([
-            "category_id" => ['required', 'exists::categories,id'],
-            "name" => ['required', 'string', 'max:255'],
+            'category_id' => ['required', 'exists:categories,id'],
+            'name' => ['required', 'string', 'max:255'],
             'sku' => ['required', 'string', 'max:255', 'unique:products,sku'],
             'price' => ['required', 'numeric', 'min:0'],
-            'stock_quantity' => ['required', 'integer', 'min:0'],
             'min_stock' => ['required', 'integer', 'min:0'],
         ]);
 
-        $product = Product::create($data);
+        // Initial inventory is recorded through StockController, keeping the movement history accurate.
+        $product = Product::create($data + ['stock_quantity' => 0]);
 
-        return redirect()
-            ->route('products.show', $product)
-            ->with('success', 'Product created successfully.');
+        return redirect()->route('products.show', $product)->with('success', 'Product created.');
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(Product $product)
     {
-        //
-        $product ->load(['category', 'stockMovements']);
-        return view ('products.show', compact('product'));
+        $product->load('category');
+        $stockMovements = $product->stockMovements()->with('user')->latest()->paginate(10);
+
+        return view('products.show', compact('product', 'stockMovements'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(Product $product)
     {
-        //
         $categories = Category::orderBy('name')->get();
-        return view('products.edit', compact('categories', 'product'));
+
+        return view('products.edit', compact('product', 'categories'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, Product $product)
     {
-        //
         $data = $request->validate([
-            "category_id" => ['required', 'exists::categories,id'],
-            "name" => ['required', 'string', 'max:255'],
-            'sku' => ['required', 'string', 'max:255', 'unique:products,sku,' . $product->id],
+            'category_id' => ['required', 'exists:categories,id'],
+            'name' => ['required', 'string', 'max:255'],
+            'sku' => ['required', 'string', 'max:255', Rule::unique('products', 'sku')->ignore($product->id)],
             'price' => ['required', 'numeric', 'min:0'],
-            'stock_quantity' => ['required', 'integer', 'min:0'],
             'min_stock' => ['required', 'integer', 'min:0'],
         ]);
+
         $product->update($data);
 
-        return redirect()
-            ->route('products.show', $product)
-            ->with('success', 'Product updated successfully.');
-
+        return redirect()->route('products.show', $product)->with('success', 'Product updated.');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Product $product)
     {
-        //
-        $product = Product::findOrFail($product->id);
+        if ($product->stockMovements()->exists()) {
+            return back()->with('error', 'This product has stock movement history and cannot be deleted.');
+        }
+
         $product->delete();
 
-        return redirect()
-            ->route('products.index')
-            ->with('success', 'Product deleted successfully.');
+        return redirect()->route('products.index')->with('success', 'Product deleted.');
     }
 }

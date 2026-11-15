@@ -14,7 +14,7 @@
                         <a href="{{ url('/dashboard') }}" class="flex items-center gap-3 rounded-xl bg-blue-50 px-3 py-3 text-blue-700">▦ Dashboard</a>
                         <a href="{{ url('/products') }}" class="flex items-center gap-3 rounded-xl px-3 py-3 text-slate-600 hover:bg-slate-100">◇ Products</a>
                         <a href="{{ url('/categories') }}" class="flex items-center gap-3 rounded-xl px-3 py-3 text-slate-600 hover:bg-slate-100">▤ Categories</a>
-                        <a href="{{ url('/stock-movements') }}" class="flex items-center gap-3 rounded-xl px-3 py-3 text-slate-600 hover:bg-slate-100">↕ Stock Movements</a>
+                        <a href="{{ route('stocks.index') }}" class="flex items-center gap-3 rounded-xl px-3 py-3 text-slate-600 hover:bg-slate-100">↕ Stock Movements</a>
                     </nav>
 
                     <p class="mb-3 mt-9 px-3 text-xs font-bold uppercase tracking-wider text-slate-400">Administration</p>
@@ -95,7 +95,7 @@
                             <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-50 text-2xl font-bold text-violet-600">◇</span>
                             <span><span class="block text-sm font-bold text-slate-900">Create category</span><span class="mt-1 block text-xs text-slate-500">Organize your products</span></span>
                         </a>
-                        <a href="{{ url('/stock-movements/create') }}" class="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 hover:border-blue-300 hover:shadow-md">
+                        <a href="{{ route('stocks.create') }}" class="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 hover:border-blue-300 hover:shadow-md">
                             <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-2xl font-bold text-emerald-600">↕</span>
                             <span><span class="block text-sm font-bold text-slate-900">Record stock</span><span class="mt-1 block text-xs text-slate-500">Stock in or stock out</span></span>
                         </a>
@@ -106,7 +106,7 @@
                         <div class="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white 2xl:col-span-2">
                             <div class="flex items-center justify-between border-b border-slate-100 px-5 py-4">
                                 <div><h3 class="font-bold text-slate-900">Recent stock movements</h3><p class="mt-1 text-xs text-slate-500">Latest inventory activity</p></div>
-                                <a href="{{ url('/stock-movements') }}" class="text-sm font-semibold text-blue-600">View all</a>
+                                <a href="{{ route('stocks.index') }}" class="text-sm font-semibold text-blue-600">View all</a>
                             </div>
                             <div class="overflow-x-auto">
                                 <table class="w-full min-w-[580px] text-left text-sm">
@@ -118,7 +118,7 @@
                                             <tr class="hover:bg-slate-50">
                                                 <td class="px-5 py-4"><p class="font-semibold text-slate-900">{{ $movement->product->name ?? 'Product' }}</p><p class="mt-1 text-xs text-slate-500">{{ $movement->product->sku ?? '—' }}</p></td>
                                                 <td class="px-5 py-4">
-                                                    @if (($movement->type ?? '') === 'in')
+                                                    @if ($movement->movement_type === 'in')
                                                         <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">Stock in</span>
                                                     @else
                                                         <span class="rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700">Stock out</span>
@@ -144,7 +144,7 @@
                                 @forelse (($lowStockProducts ?? collect()) as $product)
                                     <div class="flex items-center justify-between gap-3 px-5 py-4">
                                         <div class="min-w-0"><p class="truncate text-sm font-semibold text-slate-900">{{ $product->name }}</p><p class="mt-1 text-xs text-slate-500">{{ $product->sku }}</p></div>
-                                        <div class="shrink-0 text-right"><p class="text-sm font-bold text-amber-700">{{ $product->quantity }} left</p><p class="mt-1 text-xs text-slate-500">Min. {{ $product->minimum_stock }}</p></div>
+                                        <div class="shrink-0 text-right"><p class="text-sm font-bold text-amber-700">{{ $product->stock_quantity }} left</p><p class="mt-1 text-xs text-slate-500">Min. {{ $product->min_stock }}</p></div>
                                     </div>
                                 @empty
                                     <div class="px-5 py-10 text-center"><span class="text-2xl text-emerald-500">✓</span><p class="mt-2 text-sm font-semibold text-slate-700">All looking good!</p><p class="mt-1 text-xs text-slate-500">No low-stock products to show.</p></div>
