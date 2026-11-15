@@ -28,40 +28,23 @@ class StockController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->validate([
-            'product_id' => ['required', 'exists:products,id'],
-            'movement_type' => ['required', 'in:in,out'],
-            'quantity' => ['required', 'integer', 'min:1'],
-            'note' => ['nullable', 'string', 'max:1000'],
-        ]);
+        $data = $this->validatedMovement($request);
 
         DB::transaction(function () use ($data, $request) {
             $product = Product::whereKey($data['product_id'])
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            if ($data['movement_type'] === 'out'
-                && $product->stock_quantity < $data['quantity']) {
-                throw ValidationException::withMessages([
-                    'quantity' => 'There is not enough stock for this movement.',
-                ]);
-            }
-
-            $product->stock_quantity += $data['movement_type'] === 'in'
-                ? $data['quantity']
-                : -$data['quantity'];
-
+            $this->applyMovement($product, $data['movement_type'], $data['quantity']);
             $product->save();
 
-            StockMovement::create([
+            $product->stockMovements()->create([
                 ...$data,
                 'user_id' => $request->user()->id,
             ]);
         });
 
-        return redirect()
-            ->route('stocks.index')
-            ->with('success', 'Stock movement recorded.');
+        return redirect()->route('stocks.index')->with('success', 'Stock movement recorded.');
     }
 
     public function show(StockMovement $stock)
@@ -80,76 +63,96 @@ class StockController extends Controller
 
     public function update(Request $request, StockMovement $stock)
     {
-        $data = $request->validate([
-            'product_id' => ['required', 'exists:products,id'],
-            'movement_type' => ['required', 'in:in,out'],
-            'quantity' => ['required', 'integer', 'min:1'],
-            'note' => ['nullable', 'string', 'max:1000'],
-        ]);
+        $data = $this->validatedMovement($request);
 
         DB::transaction(function () use ($data, $stock) {
-            $stock = StockMovement::whereKey($stock->id)
+            $movement = StockMovement::whereKey($stock->id)
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            $oldProduct = Product::whereKey($stock->product_id)
+            $productIds = collect([$movement->product_id, $data['product_id']])
+                ->unique()
+                ->sort()
+                ->values();
+
+            $products = Product::whereIn('id', $productIds)
+                ->orderBy('id')
                 ->lockForUpdate()
-                ->firstOrFail();
+                ->get()
+                ->keyBy('id');
 
-            // Reverse the original movement.
-            $oldProduct->stock_quantity += $stock->movement_type === 'in'
-                ? -$stock->quantity
-                : $stock->quantity;
+            $oldProduct = $products->get($movement->product_id);
+            $newProduct = $products->get($data['product_id']);
 
-            $oldProduct->save();
-
-            $newProduct = Product::whereKey($data['product_id'])
-                ->lockForUpdate()
-                ->firstOrFail();
-
-            if ($data['movement_type'] === 'out'
-                && $newProduct->stock_quantity < $data['quantity']) {
-                throw ValidationException::withMessages([
-                    'quantity' => 'There is not enough stock for this movement.',
-                ]);
+            // Reverse the existing movement in memory before applying the edited one.
+            if ($movement->movement_type === 'in') {
+                $this->ensureEnoughStockToReverse($oldProduct, $movement->quantity);
+                $oldProduct->stock_quantity -= $movement->quantity;
+            } else {
+                $oldProduct->stock_quantity += $movement->quantity;
             }
 
-            // Apply the edited movement.
-            $newProduct->stock_quantity += $data['movement_type'] === 'in'
-                ? $data['quantity']
-                : -$data['quantity'];
+            $this->applyMovement($newProduct, $data['movement_type'], $data['quantity']);
 
-            $newProduct->save();
-            $stock->update($data);
+            $products->each(fn (Product $product) => $product->save());
+            $movement->update($data);
         });
 
-        return redirect()
-            ->route('stocks.index')
-            ->with('success', 'Stock movement updated.');
+        return redirect()->route('stocks.index')->with('success', 'Stock movement updated.');
     }
 
     public function destroy(StockMovement $stock)
     {
         DB::transaction(function () use ($stock) {
-            $stock = StockMovement::whereKey($stock->id)
+            $movement = StockMovement::whereKey($stock->id)
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            $product = Product::whereKey($stock->product_id)
+            $product = Product::whereKey($movement->product_id)
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            // Reverse the movement before removing its record.
-            $product->stock_quantity += $stock->movement_type === 'in'
-                ? -$stock->quantity
-                : $stock->quantity;
+            if ($movement->movement_type === 'in') {
+                $this->ensureEnoughStockToReverse($product, $movement->quantity);
+                $product->stock_quantity -= $movement->quantity;
+            } else {
+                $product->stock_quantity += $movement->quantity;
+            }
 
             $product->save();
-            $stock->delete();
+            $movement->delete();
         });
 
-        return redirect()
-            ->route('stocks.index')
-            ->with('success', 'Stock movement deleted.');
+        return redirect()->route('stocks.index')->with('success', 'Stock movement deleted.');
+    }
+
+    private function validatedMovement(Request $request): array
+    {
+        return $request->validate([
+            'product_id' => ['required', 'integer', 'exists:products,id'],
+            'movement_type' => ['required', 'in:in,out'],
+            'quantity' => ['required', 'integer', 'min:1'],
+            'note' => ['nullable', 'string', 'max:1000'],
+        ]);
+    }
+
+    private function applyMovement(Product $product, string $type, int $quantity): void
+    {
+        if ($type === 'out' && $product->stock_quantity < $quantity) {
+            throw ValidationException::withMessages([
+                'quantity' => 'There is not enough stock for this movement.',
+            ]);
+        }
+
+        $product->stock_quantity += $type === 'in' ? $quantity : -$quantity;
+    }
+
+    private function ensureEnoughStockToReverse(Product $product, int $quantity): void
+    {
+        if ($product->stock_quantity < $quantity) {
+            throw ValidationException::withMessages([
+                'stock' => 'This movement cannot be reversed because some of its stock has already been used.',
+            ]);
+        }
     }
 }

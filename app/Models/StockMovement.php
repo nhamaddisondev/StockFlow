@@ -13,7 +13,7 @@ class StockMovement extends Model
         'user_id',
         'quantity',
         'movement_type',
-        'movement_date'
+        'note',
     ];
 
     public function casts(): array

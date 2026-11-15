@@ -6,6 +6,7 @@
                 <h1 class="mt-1 text-3xl font-bold tracking-tight text-slate-900">Stock movements</h1>
                 <p class="mt-2 text-sm text-slate-600">Review stock added to or removed from your products.</p>
             </div>
+            <a href="{{ route('stocks.create') }}" class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">Record movement</a>
         </div>
 
         @if (session('success'))
@@ -24,6 +25,7 @@
                             <th class="px-5 py-3">Quantity</th>
                             <th class="px-5 py-3">Recorded by</th>
                             <th class="px-5 py-3">Date</th>
+                            <th class="px-5 py-3"><span class="sr-only">Actions</span></th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -43,10 +45,11 @@
                                 <td class="px-5 py-4 font-semibold text-slate-700">{{ number_format($stock->quantity) }}</td>
                                 <td class="px-5 py-4 text-slate-600">{{ $stock->user?->name ?? '—' }}</td>
                                 <td class="px-5 py-4 text-slate-600">{{ $stock->created_at?->format('d M Y, H:i') ?? '—' }}</td>
+                                <td class="px-5 py-4 text-right"><a href="{{ route('stocks.show', $stock) }}" class="font-semibold text-blue-600 hover:text-blue-800">View</a></td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="px-5 py-12 text-center">
+                                <td colspan="6" class="px-5 py-12 text-center">
                                     <p class="font-semibold text-slate-700">No stock movements yet</p>
                                     <p class="mt-1 text-sm text-slate-500">Recorded stock in and stock out activity will appear here.</p>
                                 </td>

@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\Category;
+use App\Models\Product;
+use App\Models\StockMovement;
 
 class DashboardController extends Controller
 {
@@ -11,8 +13,27 @@ class DashboardController extends Controller
      */
     public function index()
     {
-        //
-        return view('dashboard');  
+        $totalProducts = Product::count();
+        $totalCategories = Category::count();
+        $lowStockProducts = Product::whereColumn('stock_quantity', '<=', 'min_stock')
+            ->orderBy('stock_quantity')
+            ->take(5)
+            ->get();
+        $lowStockCount = Product::whereColumn('stock_quantity', '<=', 'min_stock')->count();
+        $totalStockUnits = Product::sum('stock_quantity');
+        $recentMovements = StockMovement::with('product')
+            ->latest()
+            ->take(5)
+            ->get();
+
+        return view('dashboard', compact(
+            'totalProducts',
+            'totalCategories',
+            'lowStockCount',
+            'totalStockUnits',
+            'recentMovements',
+            'lowStockProducts',
+        ));
     }
 
 }
